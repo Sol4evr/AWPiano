@@ -20,7 +20,9 @@ const $=s=>document.querySelector(s);
 const select=$('#songSelect'),sheet=$('#sheetSvg'),viewport=$('#sheetViewport'),track=$('#sheetTrack'),keyboard=$('#keyboard');
 if(!select||!sheet||!viewport||!keyboard)return;
 
-document.querySelectorAll('.hand .finger').forEach((f,i)=>f.dataset.finger=String(i+1));
+document.querySelectorAll('.hand').forEach(hand=>hand.querySelectorAll('.finger').forEach((f,i)=>f.dataset.finger=String(i+1)));
+$('#leftChip')&&($('#leftChip').textContent='LEFT HAND');
+$('#rightChip')&&($('#rightChip').textContent='RIGHT HAND');
 
 function tempo(){return Math.max(55,Math.min(125,Number($('#tempo')?.value)||82));}
 function midi(note){const semi={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};const m=note.match(/^([A-G]#?)(\d)$/);return 12*(+m[2]+1)+semi[m[1]];}
@@ -45,8 +47,8 @@ function updateUI(){
 function pulseKey(note){keyboard.querySelectorAll('.active').forEach(k=>k.classList.remove('active'));const k=keyboard.querySelector(`[data-note="${CSS.escape(note)}"]`);if(!k)return;k.classList.remove('keypulse');void k.offsetWidth;k.classList.add('active','keypulse');setTimeout(()=>k.classList.remove('keypulse','active'),220);}
 function showHand(it){
   const h=$('#rightHand'),other=$('#leftHand');if(!h)return;const noteColor=COLORS[it.note[0]]||'#7c4dff';other?.classList.add('dim');h.classList.remove('dim','press');h.style.setProperty('--activeNoteColor',noteColor);h.querySelectorAll('.finger').forEach(f=>f.classList.remove('active'));
-  const f=h.querySelector(`.f${it.finger}`);if(f){f.style.setProperty('--activeNoteColor',noteColor);f.classList.add('active');f.style.setProperty('--r',[-42,-10,-2,8,18][it.finger-1]+'deg');}
-  const key=keyboard.querySelector(`[data-note="${CSS.escape(it.note)}"]`),stage=$('.hands-stage');if(key&&stage){const kr=key.getBoundingClientRect(),br=keyboard.getBoundingClientRect(),ratio=(kr.left+kr.width/2-br.left)/Math.max(1,br.width),usable=Math.max(0,br.width-178),left=Math.max(0,Math.min(usable,ratio*br.width-89));h.style.left=`${left}px`;}
+  const f=h.querySelector(`.f${it.finger}`);if(f){f.style.setProperty('--activeNoteColor',noteColor);f.classList.add('active');f.style.setProperty('--r',[-48,-12,-2,9,21][it.finger-1]+'deg');}
+  const key=keyboard.querySelector(`[data-note="${CSS.escape(it.note)}"]`),stage=$('.hands-stage');if(key&&stage){const kr=key.getBoundingClientRect(),br=keyboard.getBoundingClientRect(),ratio=(kr.left+kr.width/2-br.left)/Math.max(1,br.width),usable=Math.max(0,br.width-190),left=Math.max(0,Math.min(usable,ratio*br.width-95));h.style.left=`${left}px`;}
   void h.offsetWidth;h.classList.add('press');
 }
 function playCurrent(){if(index>=notes.length){finish();return;}const it=notes[index];renderSheet();pulseKey(it.note);showHand(it);tone(it.note,it.beats);$('#feedback').textContent=`${it.note.replace(/\d/,'')} • finger ${it.finger}`;const delay=Math.max(150,(60000/tempo())*it.beats);timer=setTimeout(()=>{if(paused)return;index++;updateUI();playCurrent();},delay);}
@@ -65,9 +67,9 @@ document.addEventListener('click',e=>{if(!active)return;const id=e.target?.id;if
 document.addEventListener('pointerdown',e=>{if(!active||mode!=='practice')return;const k=e.target.closest?.('[data-note]');if(!k)return;e.preventDefault();e.stopImmediatePropagation();practicePress(k.dataset.note);},true);
 addSongUI();
 
-/* v1.1.1 global cue synchronizer: applies to legacy songs and Old MacDonald. */
+/* v1.1.2 global cue synchronizer: strong repeated-strike motion and clear hand labels across all songs. */
 (function installCueSync(){
-  let lastIndex=null,lastSignature=null,queued=false;
+  let lastIndex=null,lastSignature=null,queued=false,repeatTimer=null;
   function sync(){
     queued=false;
     const currentNote=sheet.querySelector('ellipse.note-current[data-i]');
@@ -83,17 +85,27 @@ addSongUI();
     const activeHand=[...document.querySelectorAll('.hand')].find(h=>!h.classList.contains('dim')&&h.querySelector('.finger.active'))||document.querySelector('.hand .finger.active')?.closest('.hand');
     const activeFinger=activeHand?.querySelector('.finger.active');
     if(activeHand)activeHand.style.setProperty('--activeNoteColor',color);
-    if(activeFinger){activeFinger.style.setProperty('--activeNoteColor',color);activeFinger.classList.remove('repeat-strike');if(repeated){void activeFinger.offsetWidth;activeFinger.classList.add('repeat-strike');setTimeout(()=>activeFinger.classList.remove('repeat-strike'),280);}}
+    if(activeFinger){
+      activeFinger.style.setProperty('--activeNoteColor',color);
+      activeFinger.classList.remove('repeat-strike');
+      if(repeated){void activeFinger.offsetWidth;activeFinger.classList.add('repeat-strike');setTimeout(()=>activeFinger.classList.remove('repeat-strike'),430);}
+    }
     const activeKey=keyboard.querySelector('.active');
-    if(activeKey&&repeated){activeKey.classList.remove('repeat-strike');void activeKey.offsetWidth;activeKey.classList.add('repeat-strike');setTimeout(()=>activeKey.classList.remove('repeat-strike'),280);}
+    if(activeKey&&repeated){activeKey.classList.remove('repeat-strike');void activeKey.offsetWidth;activeKey.classList.add('repeat-strike');setTimeout(()=>activeKey.classList.remove('repeat-strike'),430);}
+    document.querySelectorAll('.hand.repeat-cue').forEach(h=>h.classList.remove('repeat-cue'));
+    if(repeated&&activeHand){
+      activeHand.classList.add('repeat-cue');
+      clearTimeout(repeatTimer);
+      repeatTimer=setTimeout(()=>activeHand.classList.remove('repeat-cue'),430);
+    }
     lastIndex=noteIndex;lastSignature=signature;
   }
   function queue(){if(queued)return;queued=true;requestAnimationFrame(sync);}
   const observer=new MutationObserver(queue);
   observer.observe(sheet,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.querySelectorAll('.hand').forEach(h=>observer.observe(h,{subtree:true,attributes:true,attributeFilter:['class']}));
-  ['watchBtn','practiceBtn','resetBtn'].forEach(id=>document.getElementById(id)?.addEventListener('click',()=>{lastIndex=null;lastSignature=null;queue();},{capture:false}));
-  select.addEventListener('change',()=>{lastIndex=null;lastSignature=null;queue();});
+  ['watchBtn','practiceBtn','resetBtn'].forEach(id=>document.getElementById(id)?.addEventListener('click',()=>{lastIndex=null;lastSignature=null;document.querySelectorAll('.hand.repeat-cue').forEach(h=>h.classList.remove('repeat-cue'));queue();},{capture:false}));
+  select.addEventListener('change',()=>{lastIndex=null;lastSignature=null;document.querySelectorAll('.hand.repeat-cue').forEach(h=>h.classList.remove('repeat-cue'));queue();});
   queue();
 })();
 })();
