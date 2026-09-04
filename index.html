@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AWPiano — Learn Piano Through Songs</title>
+<meta name="theme-color" content="#7c4dff">
+<meta name="description" content="AWPiano is a playful browser-based piano learning app with animated sheet music, key guidance and finger demonstrations.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<header class="topbar"><div class="brand">AW<span>Piano</span></div><div class="journey">Learn songs • one note at a time</div><div class="spacer"></div><select id="songSelect" class="song-select" aria-label="Choose song"></select><button id="soundBtn" class="iconbtn" type="button" title="Sound">🔊</button></header>
+<main class="main">
+<section class="player">
+<div class="hero"><div class="song-art">♫</div><div><div class="title" id="songTitle"></div><div class="subtitle" id="songSubtitle"></div></div><div class="progress-wrap"><div class="progress"><div id="progressFill"></div></div><div id="progressText" class="progress-text">0 / 0</div></div></div>
+<div class="score-panel"><div class="sheet-shell"><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
+<div class="keyboard-zone"><div class="hands-stage"><div class="hand left" id="leftHand"><div class="hand-chip" id="leftChip">Left hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div><div class="hand right" id="rightHand"><div class="hand-chip" id="rightChip">Right hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div></div><div id="keyboard" class="keyboard"></div></div>
+</section>
+<aside class="sidebar"><div class="card" style="min-height:0;flex:1;display:flex;flex-direction:column"><h3>Song library</h3><div class="muted">Pick a full beginner melody and watch the score, keys and fingers move together.</div><div id="songList" class="song-list"></div></div><div class="card"><h3>Your practice</h3><div class="stat-grid"><div class="stat"><span>Score</span><b id="scoreNum">0</b></div><div class="stat"><span>Accuracy</span><b id="accuracy">—</b></div></div><div id="fingerInfo" class="finger-info"></div></div></aside>
+</main>
+<footer class="controls"><button class="primary" id="watchBtn" type="button">▶ Watch Song</button><button class="secondary" id="practiceBtn" type="button">🎹 Start Practice</button><button class="secondary" id="pauseBtn" type="button" disabled>⏸ Pause</button><button class="secondary" id="resetBtn" type="button">↺ Restart</button><label class="tempo">Tempo <input id="tempo" type="range" min="55" max="125" value="82"><span id="tempoLabel">82</span></label><div class="kbdtip">Keyboard: A S D F G H J = C D E F G A B</div></footer>
+</div>
+<script src="app.js"></script>
+</body></html>
