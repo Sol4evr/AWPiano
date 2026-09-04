@@ -44,8 +44,8 @@ function updateUI(){
 }
 function pulseKey(note){keyboard.querySelectorAll('.active').forEach(k=>k.classList.remove('active'));const k=keyboard.querySelector(`[data-note="${CSS.escape(note)}"]`);if(!k)return;k.classList.remove('keypulse');void k.offsetWidth;k.classList.add('active','keypulse');setTimeout(()=>k.classList.remove('keypulse','active'),220);}
 function showHand(it){
-  const h=$('#rightHand'),other=$('#leftHand');if(!h)return;other?.classList.add('dim');h.classList.remove('dim','press');h.querySelectorAll('.finger').forEach(f=>f.classList.remove('active'));
-  const f=h.querySelector(`.f${it.finger}`);if(f){f.classList.add('active');f.style.setProperty('--r',[-42,-10,-2,8,18][it.finger-1]+'deg');}
+  const h=$('#rightHand'),other=$('#leftHand');if(!h)return;const noteColor=COLORS[it.note[0]]||'#7c4dff';other?.classList.add('dim');h.classList.remove('dim','press');h.style.setProperty('--activeNoteColor',noteColor);h.querySelectorAll('.finger').forEach(f=>f.classList.remove('active'));
+  const f=h.querySelector(`.f${it.finger}`);if(f){f.style.setProperty('--activeNoteColor',noteColor);f.classList.add('active');f.style.setProperty('--r',[-42,-10,-2,8,18][it.finger-1]+'deg');}
   const key=keyboard.querySelector(`[data-note="${CSS.escape(it.note)}"]`),stage=$('.hands-stage');if(key&&stage){const kr=key.getBoundingClientRect(),br=keyboard.getBoundingClientRect(),ratio=(kr.left+kr.width/2-br.left)/Math.max(1,br.width),usable=Math.max(0,br.width-178),left=Math.max(0,Math.min(usable,ratio*br.width-89));h.style.left=`${left}px`;}
   void h.offsetWidth;h.classList.add('press');
 }
@@ -64,4 +64,36 @@ document.addEventListener('change',e=>{if(e.target!==select)return;if(select.val
 document.addEventListener('click',e=>{if(!active)return;const id=e.target?.id;if(!['watchBtn','practiceBtn','pauseBtn','resetBtn'].includes(id))return;e.preventDefault();e.stopImmediatePropagation();if(id==='watchBtn')startWatch();else if(id==='practiceBtn')startPractice();else if(id==='resetBtn')reset();else if(id==='pauseBtn'&&mode==='watch'){paused=!paused;clearTimeout(timer);e.target.textContent=paused?'▶ Resume':'⏸ Pause';if(!paused)playCurrent();}},true);
 document.addEventListener('pointerdown',e=>{if(!active||mode!=='practice')return;const k=e.target.closest?.('[data-note]');if(!k)return;e.preventDefault();e.stopImmediatePropagation();practicePress(k.dataset.note);},true);
 addSongUI();
+
+/* v1.1.1 global cue synchronizer: applies to legacy songs and Old MacDonald. */
+(function installCueSync(){
+  let lastIndex=null,lastSignature=null,queued=false;
+  function sync(){
+    queued=false;
+    const currentNote=sheet.querySelector('ellipse.note-current[data-i]');
+    if(!currentNote)return;
+    const noteIndex=Number(currentNote.getAttribute('data-i'));
+    const color=currentNote.getAttribute('fill')||'#7c4dff';
+    const names=[...sheet.querySelectorAll('.note-name-svg')];
+    const fingerLabels=[...sheet.querySelectorAll('.finger-text-svg')];
+    const noteName=names[noteIndex]?.textContent?.trim()||'';
+    const fingerNum=fingerLabels[noteIndex]?.textContent?.trim()||'';
+    const signature=`${noteName}|${fingerNum}`;
+    const repeated=lastIndex!==null&&noteIndex!==lastIndex&&signature===lastSignature;
+    const activeHand=[...document.querySelectorAll('.hand')].find(h=>!h.classList.contains('dim')&&h.querySelector('.finger.active'))||document.querySelector('.hand .finger.active')?.closest('.hand');
+    const activeFinger=activeHand?.querySelector('.finger.active');
+    if(activeHand)activeHand.style.setProperty('--activeNoteColor',color);
+    if(activeFinger){activeFinger.style.setProperty('--activeNoteColor',color);activeFinger.classList.remove('repeat-strike');if(repeated){void activeFinger.offsetWidth;activeFinger.classList.add('repeat-strike');setTimeout(()=>activeFinger.classList.remove('repeat-strike'),280);}}
+    const activeKey=keyboard.querySelector('.active');
+    if(activeKey&&repeated){activeKey.classList.remove('repeat-strike');void activeKey.offsetWidth;activeKey.classList.add('repeat-strike');setTimeout(()=>activeKey.classList.remove('repeat-strike'),280);}
+    lastIndex=noteIndex;lastSignature=signature;
+  }
+  function queue(){if(queued)return;queued=true;requestAnimationFrame(sync);}
+  const observer=new MutationObserver(queue);
+  observer.observe(sheet,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+  document.querySelectorAll('.hand').forEach(h=>observer.observe(h,{subtree:true,attributes:true,attributeFilter:['class']}));
+  ['watchBtn','practiceBtn','resetBtn'].forEach(id=>document.getElementById(id)?.addEventListener('click',()=>{lastIndex=null;lastSignature=null;queue();},{capture:false}));
+  select.addEventListener('change',()=>{lastIndex=null;lastSignature=null;queue();});
+  queue();
+})();
 })();
