@@ -18,7 +18,7 @@
 <main class="main">
 <section class="player">
 <div class="hero"><div class="song-art">♫</div><div><div class="title" id="songTitle"></div><div class="subtitle" id="songSubtitle"></div></div><div class="progress-wrap"><div class="progress"><div id="progressFill"></div></div><div id="progressText" class="progress-text">0 / 0</div></div></div>
-<div class="score-panel"><div class="sheet-shell"><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
+<div class="score-panel"><div class="sheet-shell"><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div class="mobile-lookahead" aria-label="Current and upcoming notes"><div class="lookahead-heading"><b>Now</b><span>Look ahead</span></div><div id="lookaheadNotes" class="lookahead-notes"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
 <div class="keyboard-zone"><div class="hands-stage"><div class="hand left" id="leftHand"><div class="hand-chip" id="leftChip">Left hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div><div class="hand right" id="rightHand"><div class="hand-chip" id="rightChip">Right hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div></div><div id="keyboard" class="keyboard"></div></div>
 </section>
 <aside class="sidebar"><div class="card" style="min-height:0;flex:1;display:flex;flex-direction:column"><h3>Song library</h3><div class="muted">Pick a full beginner melody and watch the score, keys and fingers move together.</div><div id="songList" class="song-list"></div></div><div class="card"><h3>Your practice</h3><div class="stat-grid"><div class="stat"><span>Score</span><b id="scoreNum">0</b></div><div class="stat"><span>Accuracy</span><b id="accuracy">—</b></div></div><div id="fingerInfo" class="finger-info"></div></div></aside>
@@ -31,5 +31,34 @@ fetch('version.json',{cache:'no-store'})
   .then(r=>r.ok?r.json():Promise.reject())
   .then(v=>{document.getElementById('releaseVersion').textContent=`AWPiano v${v.version}`})
   .catch(()=>{document.getElementById('releaseVersion').textContent='AWPiano'});
+
+(function initMobileLookahead(){
+  const sheet=document.getElementById('sheetSvg');
+  const strip=document.getElementById('lookaheadNotes');
+  if(!sheet||!strip)return;
+  function sync(){
+    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
+    const names=[...sheet.querySelectorAll('.note-name-svg')];
+    const fingers=[...sheet.querySelectorAll('.finger-text-svg')];
+    if(!notes.length){strip.innerHTML='';return;}
+    let current=notes.findIndex(n=>n.classList.contains('note-current'));
+    if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
+    if(current<0)current=Math.max(0,notes.length-1);
+    strip.innerHTML='';
+    notes.slice(current,current+6).forEach((note,offset)=>{
+      const i=current+offset;
+      const chip=document.createElement('div');
+      chip.className='lookahead-note'+(offset===0?' current':'');
+      const color=note.getAttribute('fill')||'#7c4dff';
+      const label=names[i]?.textContent?.trim()||'•';
+      const finger=fingers[i]?.textContent?.trim()||'';
+      chip.innerHTML=`<span class="lookahead-dot" style="--lookColor:${color}">${label}</span><small>${offset===0?'PLAY':`finger ${finger}`}</small>`;
+      strip.appendChild(chip);
+    });
+  }
+  new MutationObserver(sync).observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  document.getElementById('songSelect')?.addEventListener('change',()=>setTimeout(sync,0));
+  setTimeout(sync,0);
+})();
 </script>
 </body></html>
