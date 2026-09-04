@@ -40,6 +40,51 @@ fetch('version.json',{cache:'no-store'})
   const tempoInput=document.getElementById('tempo');
   if(!sheet||!track||!viewport)return;
 
+  function isMobilePortrait(){
+    return window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;
+  }
+
+  function normalizeMobileScore(){
+    if(!isMobilePortrait())return;
+    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
+    if(!notes.length)return;
+    if(sheet.dataset.mobileNormalized==='1')return;
+
+    const firstCx=parseFloat(notes[0].getAttribute('cx'))||110;
+    const desiredFirstCx=72;
+    const shift=firstCx-desiredFirstCx;
+    if(shift<=0){sheet.dataset.mobileNormalized='1';return;}
+
+    const shiftAttr=(el,attr)=>{
+      if(!el.hasAttribute(attr))return;
+      const value=parseFloat(el.getAttribute(attr));
+      if(Number.isFinite(value))el.setAttribute(attr,String(value-shift));
+    };
+
+    sheet.querySelectorAll('[cx]').forEach(el=>shiftAttr(el,'cx'));
+    sheet.querySelectorAll('[x]').forEach(el=>shiftAttr(el,'x'));
+    sheet.querySelectorAll('[x1]').forEach(el=>shiftAttr(el,'x1'));
+    sheet.querySelectorAll('[x2]').forEach(el=>shiftAttr(el,'x2'));
+
+    sheet.querySelectorAll('[transform]').forEach(el=>{
+      const transform=el.getAttribute('transform');
+      if(!transform)return;
+      const m=transform.match(/rotate\(([-\d.]+)\s+([\d.]+)\s+([\d.]+)\)/);
+      if(m){
+        el.setAttribute('transform',`rotate(${m[1]} ${parseFloat(m[2])-shift} ${m[3]})`);
+      }
+    });
+
+    const width=parseFloat(sheet.getAttribute('width'));
+    if(Number.isFinite(width)){
+      const newWidth=Math.max(viewport.clientWidth,width-shift);
+      sheet.setAttribute('width',String(newWidth));
+      const vb=(sheet.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number);
+      if(vb.length===4&&vb.every(Number.isFinite))sheet.setAttribute('viewBox',`${vb[0]} ${vb[1]} ${Math.max(viewport.clientWidth,vb[2]-shift)} ${vb[3]}`);
+    }
+    sheet.dataset.mobileNormalized='1';
+  }
+
   function currentIndex(notes){
     let current=notes.findIndex(n=>n.classList.contains('note-current'));
     if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
@@ -47,6 +92,7 @@ fetch('version.json',{cache:'no-store'})
   }
 
   function centreCurrent(instant=false){
+    normalizeMobileScore();
     const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
     if(!notes.length)return;
     const i=currentIndex(notes);
@@ -56,15 +102,12 @@ fetch('version.json',{cache:'no-store'})
     const svgWidth=parseFloat(sheet.getAttribute('width'))||view;
     const desired=view/2;
     const maxOffset=Math.max(0,svgWidth-view);
-    const mobilePortrait=window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;
     let offset;
 
-    if(mobilePortrait){
-      // The score starts flush after the pinned clef: the first note is visible immediately.
-      // Keep this opening anchor until the active note naturally reaches centre, then track it there.
-      const openingOffset=52;
-      const centredOffset=cx-desired;
-      offset=Math.max(openingOffset,Math.min(maxOffset,centredOffset));
+    if(isMobilePortrait()){
+      // Mobile starts with the whole score flush left: note 1 sits directly after the pinned clef.
+      // Translation begins only when the active note has moved beyond the centre playhead.
+      offset=Math.max(0,Math.min(maxOffset,cx-desired));
     }else{
       offset=Math.min(maxOffset,cx-desired);
     }
@@ -102,13 +145,15 @@ fetch('version.json',{cache:'no-store'})
 
   let queued=false;
   const observer=new MutationObserver(()=>{
+    sheet.dataset.mobileNormalized='0';
     if(queued)return;
     queued=true;
     requestAnimationFrame(()=>{queued=false;sync(false)});
   });
-  observer.observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  observer.observe(sheet,{childList:true,subtree:true});
 
   function hardSyncStart(){
+    sheet.dataset.mobileNormalized='0';
     sync(true);
     requestAnimationFrame(()=>sync(true));
     setTimeout(()=>sync(true),0);
@@ -120,7 +165,7 @@ fetch('version.json',{cache:'no-store'})
   document.getElementById('resetBtn')?.addEventListener('click',hardSyncStart,{capture:true});
   document.getElementById('songSelect')?.addEventListener('change',hardSyncStart);
   tempoInput?.addEventListener('input',()=>sync(false));
-  window.addEventListener('resize',()=>sync(true),{passive:true});
+  window.addEventListener('resize',()=>{sheet.dataset.mobileNormalized='0';sync(true)},{passive:true});
   requestAnimationFrame(()=>sync(true));
 })();
 </script>
