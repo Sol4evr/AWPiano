@@ -18,7 +18,7 @@
 <main class="main">
 <section class="player">
 <div class="hero"><div class="song-art">♫</div><div><div class="title" id="songTitle"></div><div class="subtitle" id="songSubtitle"></div></div><div class="progress-wrap"><div class="progress"><div id="progressFill"></div></div><div id="progressText" class="progress-text">0 / 0</div></div></div>
-<div class="score-panel"><div class="sheet-shell"><div class="mobile-clef-anchor" aria-hidden="true">𝄞</div><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div class="mobile-lookahead" aria-label="Current and upcoming notes"><div class="lookahead-heading"><b>Now</b><span>Look ahead</span></div><div id="lookaheadNotes" class="lookahead-notes"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
+<div class="score-panel"><div class="sheet-shell"><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div class="mobile-lookahead" aria-label="Current and upcoming notes"><div class="lookahead-heading"><b>Now</b><span>Look ahead</span></div><div id="lookaheadNotes" class="lookahead-notes"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
 <div class="keyboard-zone"><div class="hands-stage"><div class="hand left" id="leftHand"><div class="hand-chip" id="leftChip">Left hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div><div class="hand right" id="rightHand"><div class="hand-chip" id="rightChip">Right hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div></div><div id="keyboard" class="keyboard"></div></div>
 </section>
 <aside class="sidebar"><div class="card" style="min-height:0;flex:1;display:flex;flex-direction:column"><h3>Song library</h3><div class="muted">Pick a full beginner melody and watch the score, keys and fingers move together.</div><div id="songList" class="song-list"></div></div><div class="card"><h3>Your practice</h3><div class="stat-grid"><div class="stat"><span>Score</span><b id="scoreNum">0</b></div><div class="stat"><span>Accuracy</span><b id="accuracy">—</b></div></div><div id="fingerInfo" class="finger-info"></div></div></aside>
@@ -44,55 +44,13 @@ fetch('version.json',{cache:'no-store'})
     return window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;
   }
 
-  function normalizeMobileScore(){
-    if(!isMobilePortrait())return;
-    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
-    if(!notes.length)return;
-    if(sheet.dataset.mobileNormalized==='1')return;
-
-    const firstCx=parseFloat(notes[0].getAttribute('cx'))||110;
-    const desiredFirstCx=72;
-    const shift=firstCx-desiredFirstCx;
-    if(shift<=0){sheet.dataset.mobileNormalized='1';return;}
-
-    const shiftAttr=(el,attr)=>{
-      if(!el.hasAttribute(attr))return;
-      const value=parseFloat(el.getAttribute(attr));
-      if(Number.isFinite(value))el.setAttribute(attr,String(value-shift));
-    };
-
-    sheet.querySelectorAll('[cx]').forEach(el=>shiftAttr(el,'cx'));
-    sheet.querySelectorAll('[x]').forEach(el=>shiftAttr(el,'x'));
-    sheet.querySelectorAll('[x1]').forEach(el=>shiftAttr(el,'x1'));
-    sheet.querySelectorAll('[x2]').forEach(el=>shiftAttr(el,'x2'));
-
-    sheet.querySelectorAll('[transform]').forEach(el=>{
-      const transform=el.getAttribute('transform');
-      if(!transform)return;
-      const m=transform.match(/rotate\(([-\d.]+)\s+([\d.]+)\s+([\d.]+)\)/);
-      if(m){
-        el.setAttribute('transform',`rotate(${m[1]} ${parseFloat(m[2])-shift} ${m[3]})`);
-      }
-    });
-
-    const width=parseFloat(sheet.getAttribute('width'));
-    if(Number.isFinite(width)){
-      const newWidth=Math.max(viewport.clientWidth,width-shift);
-      sheet.setAttribute('width',String(newWidth));
-      const vb=(sheet.getAttribute('viewBox')||'').trim().split(/\s+/).map(Number);
-      if(vb.length===4&&vb.every(Number.isFinite))sheet.setAttribute('viewBox',`${vb[0]} ${vb[1]} ${Math.max(viewport.clientWidth,vb[2]-shift)} ${vb[3]}`);
-    }
-    sheet.dataset.mobileNormalized='1';
-  }
-
   function currentIndex(notes){
     let current=notes.findIndex(n=>n.classList.contains('note-current'));
     if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
     return current<0?Math.max(0,notes.length-1):current;
   }
 
-  function centreCurrent(instant=false){
-    normalizeMobileScore();
+  function positionScore(instant=false){
     const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
     if(!notes.length)return;
     const i=currentIndex(notes);
@@ -100,22 +58,22 @@ fetch('version.json',{cache:'no-store'})
     const cx=parseFloat(note.getAttribute('cx'))||0;
     const view=Math.max(1,viewport.clientWidth);
     const svgWidth=parseFloat(sheet.getAttribute('width'))||view;
-    const desired=view/2;
     const maxOffset=Math.max(0,svgWidth-view);
-    let offset;
+    let offset=0;
 
     if(isMobilePortrait()){
-      // Mobile starts with the whole score flush left: note 1 sits directly after the pinned clef.
-      // Translation begins only when the active note has moved beyond the centre playhead.
-      offset=Math.max(0,Math.min(maxOffset,cx-desired));
+      // Start with the native score completely flush-left: its own clef, staff and note 1
+      // are all visible together. Do not translate until the active note itself reaches centre.
+      const centre=view/2;
+      offset=cx>centre?Math.min(maxOffset,cx-centre):0;
     }else{
-      offset=Math.min(maxOffset,cx-desired);
+      offset=Math.min(maxOffset,cx-view/2);
     }
 
     const bpm=Math.max(55,Math.min(125,Number(tempoInput?.value)||82));
     const transitionMs=instant?0:Math.max(55,Math.min(110,Math.round((60000/bpm)*0.12)));
-    track.style.transition=transitionMs?`transform ${transitionMs}ms linear`:'none';
-    track.style.transform=`translate3d(${-offset}px,0,0)`;
+    track.style.setProperty('transition',transitionMs?`transform ${transitionMs}ms linear`:'none','important');
+    track.style.setProperty('transform',`translate3d(${-offset}px,0,0)`,'important');
   }
 
   function syncLookahead(){
@@ -139,21 +97,21 @@ fetch('version.json',{cache:'no-store'})
   }
 
   function sync(instant=false){
-    centreCurrent(instant);
+    positionScore(instant);
     syncLookahead();
   }
 
   let queued=false;
   const observer=new MutationObserver(()=>{
-    sheet.dataset.mobileNormalized='0';
     if(queued)return;
     queued=true;
     requestAnimationFrame(()=>{queued=false;sync(false)});
   });
-  observer.observe(sheet,{childList:true,subtree:true});
+  observer.observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
 
   function hardSyncStart(){
-    sheet.dataset.mobileNormalized='0';
+    track.style.setProperty('transform','translate3d(0,0,0)','important');
+    track.style.setProperty('transition','none','important');
     sync(true);
     requestAnimationFrame(()=>sync(true));
     setTimeout(()=>sync(true),0);
@@ -165,7 +123,7 @@ fetch('version.json',{cache:'no-store'})
   document.getElementById('resetBtn')?.addEventListener('click',hardSyncStart,{capture:true});
   document.getElementById('songSelect')?.addEventListener('change',hardSyncStart);
   tempoInput?.addEventListener('input',()=>sync(false));
-  window.addEventListener('resize',()=>{sheet.dataset.mobileNormalized='0';sync(true)},{passive:true});
+  window.addEventListener('resize',()=>sync(true),{passive:true});
   requestAnimationFrame(()=>sync(true));
 })();
 </script>
