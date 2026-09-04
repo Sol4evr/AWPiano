@@ -18,7 +18,7 @@
 <main class="main">
 <section class="player">
 <div class="hero"><div class="song-art">♫</div><div><div class="title" id="songTitle"></div><div class="subtitle" id="songSubtitle"></div></div><div class="progress-wrap"><div class="progress"><div id="progressFill"></div></div><div id="progressText" class="progress-text">0 / 0</div></div></div>
-<div class="score-panel"><div class="sheet-shell"><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div class="mobile-lookahead" aria-label="Current and upcoming notes"><div class="lookahead-heading"><b>Now</b><span>Look ahead</span></div><div id="lookaheadNotes" class="lookahead-notes"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
+<div class="score-panel"><div class="sheet-shell"><svg id="mobileScoreSvg" class="mobile-score-svg" viewBox="0 0 390 180" preserveAspectRatio="none" aria-label="Current and upcoming sheet music"></svg><div class="sheet-viewport" id="sheetViewport"><div class="sheet-track" id="sheetTrack"><svg id="sheetSvg" class="sheet-svg" aria-label="Song sheet music"></svg></div></div><div class="sheet-fade-left"></div><div class="sheet-fade-right"></div><div class="playhead"></div></div><div class="mobile-lookahead" aria-label="Current and upcoming notes"><div class="lookahead-heading"><b>Now</b><span>Look ahead</span></div><div id="lookaheadNotes" class="lookahead-notes"></div></div><div id="feedback" class="feedback" aria-live="polite">Choose a song, then press Watch Song to see every note and finger.</div></div>
 <div class="keyboard-zone"><div class="hands-stage"><div class="hand left" id="leftHand"><div class="hand-chip" id="leftChip">Left hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div><div class="hand right" id="rightHand"><div class="hand-chip" id="rightChip">Right hand</div><div class="wrist"></div><div class="palm"></div><div class="thumb"></div><div class="finger f1"></div><div class="finger f2"></div><div class="finger f3"></div><div class="finger f4"></div><div class="finger f5"></div></div></div><div id="keyboard" class="keyboard"></div></div>
 </section>
 <aside class="sidebar"><div class="card" style="min-height:0;flex:1;display:flex;flex-direction:column"><h3>Song library</h3><div class="muted">Pick a full beginner melody and watch the score, keys and fingers move together.</div><div id="songList" class="song-list"></div></div><div class="card"><h3>Your practice</h3><div class="stat-grid"><div class="stat"><span>Score</span><b id="scoreNum">0</b></div><div class="stat"><span>Accuracy</span><b id="accuracy">—</b></div></div><div id="fingerInfo" class="finger-info"></div></div></aside>
@@ -37,39 +37,57 @@ fetch('version.json',{cache:'no-store'})
   const track=document.getElementById('sheetTrack');
   const viewport=document.getElementById('sheetViewport');
   const strip=document.getElementById('lookaheadNotes');
+  const mobileScore=document.getElementById('mobileScoreSvg');
   const tempoInput=document.getElementById('tempo');
   if(!sheet||!track||!viewport)return;
 
-  function isMobilePortrait(){
-    return window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;
-  }
-
+  function isMobilePortrait(){return window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;}
   function currentIndex(notes){
     let current=notes.findIndex(n=>n.classList.contains('note-current'));
     if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
     return current<0?Math.max(0,notes.length-1):current;
   }
 
-  function positionScore(instant=false){
+  function renderMobileScore(){
+    if(!mobileScore||!isMobilePortrait())return;
+    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
+    const names=[...sheet.querySelectorAll('.note-name-svg')];
+    const fingers=[...sheet.querySelectorAll('.finger-text-svg')];
+    if(!notes.length){mobileScore.innerHTML='';return;}
+    const current=currentIndex(notes);
+    const width=Math.max(320,Math.round(mobileScore.clientWidth||viewport.clientWidth||390));
+    const height=180;
+    mobileScore.setAttribute('viewBox',`0 0 ${width} ${height}`);
+    mobileScore.setAttribute('preserveAspectRatio','none');
+    const shown=notes.slice(current,current+5);
+    const clefX=12, firstX=76, available=Math.max(210,width-firstX-18), spacing=Math.min(66,available/Math.max(1,shown.length-1));
+    let s='';
+    [54,70,86,102,118].forEach(y=>s+=`<line x1="4" y1="${y}" x2="${width-4}" y2="${y}" class="mobile-staff-line"/>`);
+    s+=`<text x="12" y="108" class="mobile-clef">𝄞</text>`;
+    shown.forEach((note,j)=>{
+      const sourceI=current+j;
+      const x=firstX+j*spacing;
+      const sourceY=parseFloat(note.getAttribute('cy'))||86;
+      const y=Math.max(48,Math.min(124,sourceY-8));
+      const fill=note.getAttribute('fill')||'#7c4dff';
+      const label=names[sourceI]?.textContent?.trim()||'';
+      const finger=fingers[sourceI]?.textContent?.trim()||'';
+      if(j===0)s+=`<circle cx="${x}" cy="${y}" r="20" class="mobile-current-halo"/>`;
+      s+=`<ellipse cx="${x}" cy="${y}" rx="10" ry="7" transform="rotate(-18 ${x} ${y})" fill="${fill}" class="mobile-note${j===0?' current':''}"/>`;
+      s+=`<line x1="${x+8}" y1="${y}" x2="${x+8}" y2="${y-30}" class="mobile-stem"/>`;
+      s+=`<circle cx="${x}" cy="${Math.max(16,y-42)}" r="9" class="mobile-finger-badge"/><text x="${x}" y="${Math.max(20,y-38)}" text-anchor="middle" class="mobile-finger-text">${finger}</text>`;
+      s+=`<text x="${x}" y="154" text-anchor="middle" class="mobile-note-name">${label}</text>`;
+    });
+    mobileScore.innerHTML=s;
+  }
+
+  function positionDesktopScore(instant=false){
+    if(isMobilePortrait()){track.style.setProperty('transform','translate3d(0,0,0)','important');track.style.setProperty('transition','none','important');return;}
     const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
     if(!notes.length)return;
-    const i=currentIndex(notes);
-    const note=notes[i];
-    const cx=parseFloat(note.getAttribute('cx'))||0;
-    const view=Math.max(1,viewport.clientWidth);
-    const svgWidth=parseFloat(sheet.getAttribute('width'))||view;
-    const maxOffset=Math.max(0,svgWidth-view);
-    let offset=0;
-
-    if(isMobilePortrait()){
-      // Start with the native score completely flush-left: its own clef, staff and note 1
-      // are all visible together. Do not translate until the active note itself reaches centre.
-      const centre=view/2;
-      offset=cx>centre?Math.min(maxOffset,cx-centre):0;
-    }else{
-      offset=Math.min(maxOffset,cx-view/2);
-    }
-
+    const i=currentIndex(notes), note=notes[i], cx=parseFloat(note.getAttribute('cx'))||0;
+    const view=Math.max(1,viewport.clientWidth), svgWidth=parseFloat(sheet.getAttribute('width'))||view;
+    const offset=Math.min(Math.max(0,svgWidth-view),Math.max(0,cx-view/2));
     const bpm=Math.max(55,Math.min(125,Number(tempoInput?.value)||82));
     const transitionMs=instant?0:Math.max(55,Math.min(110,Math.round((60000/bpm)*0.12)));
     track.style.setProperty('transition',transitionMs?`transform ${transitionMs}ms linear`:'none','important');
@@ -78,46 +96,23 @@ fetch('version.json',{cache:'no-store'})
 
   function syncLookahead(){
     if(!strip)return;
-    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
-    const names=[...sheet.querySelectorAll('.note-name-svg')];
-    const fingers=[...sheet.querySelectorAll('.finger-text-svg')];
+    const notes=[...sheet.querySelectorAll('ellipse[data-i]')], names=[...sheet.querySelectorAll('.note-name-svg')], fingers=[...sheet.querySelectorAll('.finger-text-svg')];
     if(!notes.length){strip.innerHTML='';return;}
-    const current=currentIndex(notes);
-    strip.innerHTML='';
+    const current=currentIndex(notes); strip.innerHTML='';
     notes.slice(current,current+6).forEach((note,offset)=>{
-      const i=current+offset;
-      const chip=document.createElement('div');
+      const i=current+offset, chip=document.createElement('div');
       chip.className='lookahead-note'+(offset===0?' current':'');
-      const color=note.getAttribute('fill')||'#7c4dff';
-      const label=names[i]?.textContent?.trim()||'•';
-      const finger=fingers[i]?.textContent?.trim()||'';
+      const color=note.getAttribute('fill')||'#7c4dff', label=names[i]?.textContent?.trim()||'•', finger=fingers[i]?.textContent?.trim()||'';
       chip.innerHTML=`<span class="lookahead-dot" style="--lookColor:${color}">${label}</span><small>${offset===0?'PLAY':`finger ${finger}`}</small>`;
       strip.appendChild(chip);
     });
   }
 
-  function sync(instant=false){
-    positionScore(instant);
-    syncLookahead();
-  }
-
+  function sync(instant=false){positionDesktopScore(instant);renderMobileScore();syncLookahead();}
   let queued=false;
-  const observer=new MutationObserver(()=>{
-    if(queued)return;
-    queued=true;
-    requestAnimationFrame(()=>{queued=false;sync(false)});
-  });
+  const observer=new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;sync(false)});});
   observer.observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-
-  function hardSyncStart(){
-    track.style.setProperty('transform','translate3d(0,0,0)','important');
-    track.style.setProperty('transition','none','important');
-    sync(true);
-    requestAnimationFrame(()=>sync(true));
-    setTimeout(()=>sync(true),0);
-    setTimeout(()=>sync(true),40);
-  }
-
+  function hardSyncStart(){sync(true);requestAnimationFrame(()=>sync(true));setTimeout(()=>sync(true),0);setTimeout(()=>sync(true),40);}
   document.getElementById('watchBtn')?.addEventListener('click',hardSyncStart,{capture:true});
   document.getElementById('practiceBtn')?.addEventListener('click',hardSyncStart,{capture:true});
   document.getElementById('resetBtn')?.addEventListener('click',hardSyncStart,{capture:true});
