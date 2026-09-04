@@ -32,18 +32,46 @@ fetch('version.json',{cache:'no-store'})
   .then(v=>{document.getElementById('releaseVersion').textContent=`AWPiano v${v.version}`})
   .catch(()=>{document.getElementById('releaseVersion').textContent='AWPiano'});
 
-(function initMobileLookahead(){
+(function initScoreGuidance(){
   const sheet=document.getElementById('sheetSvg');
+  const track=document.getElementById('sheetTrack');
+  const viewport=document.getElementById('sheetViewport');
   const strip=document.getElementById('lookaheadNotes');
-  if(!sheet||!strip)return;
-  function sync(){
+  const tempoInput=document.getElementById('tempo');
+  if(!sheet||!track||!viewport)return;
+
+  function currentIndex(notes){
+    let current=notes.findIndex(n=>n.classList.contains('note-current'));
+    if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
+    return current<0?Math.max(0,notes.length-1):current;
+  }
+
+  function centreCurrent(instant=false){
+    const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
+    if(!notes.length)return;
+    const i=currentIndex(notes);
+    const note=notes[i];
+    const cx=parseFloat(note.getAttribute('cx'))||0;
+    const view=Math.max(1,viewport.clientWidth);
+    const svgWidth=parseFloat(sheet.getAttribute('width'))||view;
+    const desired=view/2;
+    const rawOffset=cx-desired;
+    const maxOffset=Math.max(0,svgWidth-view);
+    const minOffset=Math.min(0,cx-desired);
+    const offset=Math.max(minOffset,Math.min(maxOffset,rawOffset));
+    const bpm=Math.max(55,Math.min(125,Number(tempoInput?.value)||82));
+    const transitionMs=instant?0:Math.max(70,Math.min(140,Math.round((60000/bpm)*0.16)));
+    track.style.transition=transitionMs?`transform ${transitionMs}ms linear`:'none';
+    track.style.transform=`translate3d(${-offset}px,0,0)`;
+  }
+
+  function syncLookahead(){
+    if(!strip)return;
     const notes=[...sheet.querySelectorAll('ellipse[data-i]')];
     const names=[...sheet.querySelectorAll('.note-name-svg')];
     const fingers=[...sheet.querySelectorAll('.finger-text-svg')];
     if(!notes.length){strip.innerHTML='';return;}
-    let current=notes.findIndex(n=>n.classList.contains('note-current'));
-    if(current<0)current=notes.findIndex(n=>!n.classList.contains('note-played'));
-    if(current<0)current=Math.max(0,notes.length-1);
+    const current=currentIndex(notes);
     strip.innerHTML='';
     notes.slice(current,current+6).forEach((note,offset)=>{
       const i=current+offset;
@@ -56,9 +84,30 @@ fetch('version.json',{cache:'no-store'})
       strip.appendChild(chip);
     });
   }
-  new MutationObserver(sync).observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-  document.getElementById('songSelect')?.addEventListener('change',()=>setTimeout(sync,0));
-  setTimeout(sync,0);
+
+  function sync(instant=false){
+    centreCurrent(instant);
+    syncLookahead();
+  }
+
+  let queued=false;
+  const observer=new MutationObserver(()=>{
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;sync(false)});
+  });
+  observer.observe(sheet,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+
+  document.getElementById('watchBtn')?.addEventListener('click',()=>{
+    requestAnimationFrame(()=>sync(true));
+    setTimeout(()=>sync(true),0);
+  },{capture:true});
+  document.getElementById('practiceBtn')?.addEventListener('click',()=>requestAnimationFrame(()=>sync(true)),{capture:true});
+  document.getElementById('resetBtn')?.addEventListener('click',()=>requestAnimationFrame(()=>sync(true)),{capture:true});
+  document.getElementById('songSelect')?.addEventListener('change',()=>requestAnimationFrame(()=>sync(true)));
+  tempoInput?.addEventListener('input',()=>sync(false));
+  window.addEventListener('resize',()=>sync(true),{passive:true});
+  requestAnimationFrame(()=>sync(true));
 })();
 </script>
 </body></html>
