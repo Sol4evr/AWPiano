@@ -1,4 +1,4 @@
-/* AWPiano v1.1.2 visual enhancement layer */
+/* AWPiano v1.1.3 visual enhancement layer */
 .keyboard{gap:1px;padding:0 2px 2px;background:linear-gradient(180deg,#302c38 0,#17151d 100%);border-radius:10px 10px 16px 16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.1),0 14px 30px rgba(31,24,42,.18);overflow:visible}
 .white{border:0;border-left:1px solid #d8d5dc;border-right:1px solid #c9c5cf;background:linear-gradient(90deg,#eeeef2 0,#fff 13%,#fff 78%,#e9e8ed 100%);box-shadow:inset 0 -10px 13px rgba(89,82,98,.09),inset 0 2px 2px #fff,0 3px 3px rgba(0,0,0,.14);border-radius:0 0 10px 10px;color:#77717f;transform-origin:top center}
 .white:before{content:'';position:absolute;left:8%;right:8%;top:0;height:5px;border-radius:0 0 6px 6px;background:linear-gradient(180deg,rgba(89,82,99,.16),transparent)}
@@ -6,6 +6,12 @@
 .black:after{content:'';position:absolute;left:13%;right:13%;bottom:7px;height:10px;border-radius:4px;background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.015));box-shadow:inset 0 1px 1px rgba(255,255,255,.08)}
 .white.active{transform:perspective(300px) rotateX(-2deg) translateY(4px);background:linear-gradient(180deg,color-mix(in srgb,var(--noteColor) 68%,#fff),var(--noteColor));box-shadow:inset 0 -8px 10px rgba(0,0,0,.12),0 0 22px color-mix(in srgb,var(--noteColor) 48%,transparent)}
 .black.active{transform:perspective(300px) rotateX(-3deg) translateY(5px);background:linear-gradient(180deg,color-mix(in srgb,var(--noteColor) 70%,#fff),var(--noteColor));box-shadow:inset 0 -8px 10px rgba(0,0,0,.18),0 0 22px color-mix(in srgb,var(--noteColor) 65%,transparent)}
+
+/* Keep the hands physically on the correct side of the keyboard. */
+.hands-stage{position:relative}
+#leftHand{left:3%!important;right:auto!important}
+#rightHand{left:auto!important;right:3%!important}
+.hand.dim{opacity:.34}
 
 /* Five clearly distinct visible digits. Finger 1 is the thumb. */
 .hand .thumb{display:none!important}
@@ -43,4 +49,4 @@
 .hand.repeat-cue .hand-chip:before{content:'↟ LIFT • PRESS AGAIN';position:absolute;left:50%;top:-29px;transform:translateX(-50%);white-space:nowrap;padding:4px 8px;border-radius:999px;background:var(--activeNoteColor,#7c4dff);color:#fff;font-size:9px;font-weight:950;letter-spacing:.04em;border:2px solid #fff;box-shadow:0 4px 10px rgba(54,42,70,.16)}
 .hand.right.repeat-cue .hand-chip:before{transform:translateX(-50%) scaleX(-1)}
 
-@media(max-width:600px){.keyboard{border-radius:8px 8px 13px 13px;gap:.6px}.black{width:5.35%;border-radius:0 0 6px 6px}.white{border-radius:0 0 7px 7px}.hand{width:190px}.hand .palm{width:99px}.finger:before{top:-15px;width:15px;height:15px;font-size:8px}.hand.press .finger.active:before{top:-21px;width:21px;height:21px;font-size:11px}.hand-chip{font-size:9px!important;padding:5px 9px!important}.hand.left .hand-chip:after,.hand.right .hand-chip:after{content:''}.hand.repeat-cue .hand-chip:before{top:-25px;font-size:8px;padding:3px 7px}}
+@media(max-width:600px){.keyboard{border-radius:8px 8px 13px 13px;gap:.6px}.black{width:5.35%;border-radius:0 0 6px 6px}.white{border-radius:0 0 7px 7px}.hand{width:190px}.hand .palm{width:99px}.finger:before{top:-15px;width:15px;height:15px;font-size:8px}.hand.press .finger.active:before{top:-21px;width:21px;height:21px;font-size:11px}.hand-chip{font-size:9px!important;padding:5px 9px!important}.hand.left .hand-chip:after,.hand.right .hand-chip:after{content:''}.hand.repeat-cue .hand-chip:before{top:-25px;font-size:8px;padding:3px 7px}#leftHand{left:1%!important}#rightHand{right:1%!important}}
