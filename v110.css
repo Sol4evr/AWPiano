@@ -1,4 +1,4 @@
-/* AWPiano v1.1.0 visual enhancement layer */
+/* AWPiano v1.1.1 visual enhancement layer */
 .keyboard{gap:1px;padding:0 2px 2px;background:linear-gradient(180deg,#302c38 0,#17151d 100%);border-radius:10px 10px 16px 16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.1),0 14px 30px rgba(31,24,42,.18);overflow:visible}
 .white{border:0;border-left:1px solid #d8d5dc;border-right:1px solid #c9c5cf;background:linear-gradient(90deg,#eeeef2 0,#fff 13%,#fff 78%,#e9e8ed 100%);box-shadow:inset 0 -10px 13px rgba(89,82,98,.09),inset 0 2px 2px #fff,0 3px 3px rgba(0,0,0,.14);border-radius:0 0 10px 10px;color:#77717f;transform-origin:top center}
 .white:before{content:'';position:absolute;left:8%;right:8%;top:0;height:5px;border-radius:0 0 6px 6px;background:linear-gradient(180deg,rgba(89,82,99,.16),transparent)}
@@ -19,7 +19,15 @@
 .f4{left:126px;height:60px;transform:rotate(8deg)}
 .f5{left:148px;height:49px;transform:rotate(18deg)}
 .hand.press .finger.active{z-index:5;transform:translateY(18px) rotate(var(--r,0deg))!important;filter:saturate(1.06) brightness(.93);box-shadow:inset 0 -7px 8px rgba(113,61,40,.16),0 8px 10px rgba(66,40,31,.18)}
-.hand.press .finger.active:before{content:attr(data-finger);position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:#7c4dff;color:white;font-size:10px;font-weight:950;border:2px solid white;box-shadow:0 3px 9px rgba(74,49,120,.25)}
+.hand.press .finger.active:before{content:attr(data-finger);position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--activeNoteColor,#7c4dff);color:white;font-size:10px;font-weight:950;border:2px solid white;box-shadow:0 3px 10px color-mix(in srgb,var(--activeNoteColor,#7c4dff) 45%,rgba(74,49,120,.25))}
 .finger[data-finger]{ }
+
+/* Repeated same-key/same-finger strikes clearly lift and press again. */
+.white.repeat-strike,.black.repeat-strike{animation:repeatKeyStrike .24s ease-out!important}
+.hand .finger.repeat-strike{animation:repeatFingerStrike .24s ease-out!important}
+.hand .finger.repeat-strike:before{animation:repeatBadgePulse .24s ease-out}
+@keyframes repeatKeyStrike{0%{filter:brightness(.9);transform:translateY(4px) scaleY(.985)}34%{filter:brightness(1.08);transform:translateY(0) scaleY(1.01)}100%{filter:brightness(1);transform:translateY(4px) scaleY(1)}}
+@keyframes repeatFingerStrike{0%{transform:translateY(18px) rotate(var(--r,0deg))}35%{transform:translateY(-4px) rotate(var(--r,0deg))}100%{transform:translateY(18px) rotate(var(--r,0deg))}}
+@keyframes repeatBadgePulse{0%{transform:translateX(-50%) scale(.88);opacity:.65}45%{transform:translateX(-50%) scale(1.18);opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
 
 @media(max-width:600px){.keyboard{border-radius:8px 8px 13px 13px;gap:.6px}.black{width:5.35%;border-radius:0 0 6px 6px}.white{border-radius:0 0 7px 7px}.hand .palm{width:94px}.hand.press .finger.active:before{top:-19px;width:17px;height:17px;font-size:9px}}
