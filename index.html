@@ -55,9 +55,20 @@ fetch('version.json',{cache:'no-store'})
     const view=Math.max(1,viewport.clientWidth);
     const svgWidth=parseFloat(sheet.getAttribute('width'))||view;
     const desired=view/2;
-    const rawOffset=cx-desired;
     const maxOffset=Math.max(0,svgWidth-view);
-    const offset=Math.min(maxOffset,rawOffset);
+    const mobilePortrait=window.matchMedia('(max-width:600px) and (orientation:portrait)').matches;
+    let offset;
+
+    if(mobilePortrait){
+      // The score starts flush after the pinned clef: the first note is visible immediately.
+      // Keep this opening anchor until the active note naturally reaches centre, then track it there.
+      const openingOffset=52;
+      const centredOffset=cx-desired;
+      offset=Math.max(openingOffset,Math.min(maxOffset,centredOffset));
+    }else{
+      offset=Math.min(maxOffset,cx-desired);
+    }
+
     const bpm=Math.max(55,Math.min(125,Number(tempoInput?.value)||82));
     const transitionMs=instant?0:Math.max(55,Math.min(110,Math.round((60000/bpm)*0.12)));
     track.style.transition=transitionMs?`transform ${transitionMs}ms linear`:'none';
