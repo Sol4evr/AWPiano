@@ -1,4 +1,4 @@
-/* AWPiano v1.1.5 visual enhancement layer */
+/* AWPiano v1.1.6 visual enhancement layer */
 .keyboard{gap:1px;padding:0 2px 2px;background:linear-gradient(180deg,#302c38 0,#17151d 100%);border-radius:10px 10px 16px 16px;box-shadow:inset 0 2px 0 rgba(255,255,255,.1),0 14px 30px rgba(31,24,42,.18);overflow:visible}
 .white{border:0;border-left:1px solid #d8d5dc;border-right:1px solid #c9c5cf;background:linear-gradient(90deg,#eeeef2 0,#fff 13%,#fff 78%,#e9e8ed 100%);box-shadow:inset 0 -10px 13px rgba(89,82,98,.09),inset 0 2px 2px #fff,0 3px 3px rgba(0,0,0,.14);border-radius:0 0 10px 10px;color:#77717f;transform-origin:top center}
 .white:before{content:'';position:absolute;left:8%;right:8%;top:0;height:5px;border-radius:0 0 6px 6px;background:linear-gradient(180deg,rgba(89,82,99,.16),transparent)}
@@ -15,6 +15,8 @@
 
 .hand .thumb{display:none!important}
 .hand{width:190px;height:118px}
+.hand.left{transform:scaleX(-1)!important;transform-origin:bottom center!important}
+.hand.right{transform:none!important;transform-origin:bottom center!important}
 .hand .palm{left:49px;bottom:22px;width:101px;height:63px;border-radius:48% 46% 38% 38%;background:radial-gradient(circle at 35% 18%,#ffe8d9 0,#f1c6ad 39%,#da9e7c 74%,#bd7c5a 100%);box-shadow:inset 0 -12px 15px rgba(119,67,43,.15),inset 0 8px 12px rgba(255,255,255,.3),0 2px 2px rgba(106,60,43,.08)}
 .hand .wrist{left:73px;background:linear-gradient(145deg,#f7d8c4,#dfa782 60%,#c98b67)}
 .finger{background:linear-gradient(90deg,#cf8f6b 0,#f1c3a7 18%,#ffe6d5 48%,#e6ae8d 82%,#c98360 100%);box-shadow:inset 0 -7px 8px rgba(113,61,40,.12),inset 3px 0 5px rgba(255,255,255,.15);border:1px solid rgba(155,95,67,.13);transition:transform .1s ease,filter .1s ease}
@@ -26,12 +28,14 @@
 .f5{left:154px;height:50px;transform:rotate(21deg)}
 
 .finger:before{content:attr(data-finger);position:absolute;left:50%;top:-17px;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#6e6678;font-size:9px;font-weight:950;border:1px solid #d8d1df;box-shadow:0 2px 6px rgba(61,43,82,.12);z-index:6}
+.hand.left .finger:before{transform:translateX(-50%) scaleX(-1)}
 .hand.press .finger.active{z-index:8;transform:translateY(19px) rotate(var(--r,0deg));filter:saturate(1.08) brightness(.92);box-shadow:inset 0 -7px 8px rgba(113,61,40,.16),0 8px 10px rgba(66,40,31,.18)}
 .hand.press .finger.active:before{top:-24px;width:23px;height:23px;background:var(--activeNoteColor,#7c4dff);color:#fff;font-size:12px;border:3px solid #fff;box-shadow:0 4px 12px color-mix(in srgb,var(--activeNoteColor,#7c4dff) 48%,rgba(74,49,120,.25))}
 
 .hand-chip{top:-9px!important;padding:6px 11px!important;font-size:10px!important;letter-spacing:.06em!important;text-transform:uppercase;background:#302a3d!important;color:#fff!important;border:2px solid #fff!important;box-shadow:0 5px 14px rgba(51,38,70,.18)!important}
+.hand.left .hand-chip{transform:translateX(-50%) scaleX(-1)!important}
 .hand.left .hand-chip:after{content:' • fingers 1–5';font-weight:700;opacity:.72}
-.hand.right .hand-chip{transform:translateX(-50%) scaleX(-1)!important}
+.hand.right .hand-chip{transform:translateX(-50%)!important}
 .hand.right .hand-chip:after{content:' • fingers 1–5';font-weight:700;opacity:.72}
 
 .white.repeat-strike,.black.repeat-strike{animation:repeatKeyStrike .36s cubic-bezier(.2,.7,.25,1)!important}
@@ -40,8 +44,10 @@
 @keyframes repeatKeyStrike{0%{filter:brightness(.88);transform:translateY(5px) scaleY(.98)}38%{filter:brightness(1.08);transform:translateY(-1px) scaleY(1.015)}55%{filter:brightness(1.12);transform:translateY(-1px) scaleY(1.015)}100%{filter:brightness(1);transform:translateY(5px) scaleY(.99)}}
 @keyframes repeatFingerStrike{0%{transform:translateY(19px) rotate(var(--r,0deg))}38%{transform:translateY(-12px) rotate(var(--r,0deg))}55%{transform:translateY(-12px) rotate(var(--r,0deg))}100%{transform:translateY(19px) rotate(var(--r,0deg))}}
 @keyframes repeatBadgePulse{0%{transform:translateX(-50%) scale(1);opacity:1}38%{transform:translateX(-50%) translateY(-5px) scale(.8);opacity:.6}58%{transform:translateX(-50%) translateY(-5px) scale(.8);opacity:.6}100%{transform:translateX(-50%) scale(1.18);opacity:1}}
+
 .hand.repeat-cue .hand-chip:before{content:'↟ LIFT • PRESS AGAIN';position:absolute;left:50%;top:-29px;transform:translateX(-50%);white-space:nowrap;padding:4px 8px;border-radius:999px;background:var(--activeNoteColor,#7c4dff);color:#fff;font-size:9px;font-weight:950;letter-spacing:.04em;border:2px solid #fff;box-shadow:0 4px 10px rgba(54,42,70,.16)}
-.hand.right.repeat-cue .hand-chip:before{transform:translateX(-50%) scaleX(-1)}
+.hand.left.repeat-cue .hand-chip:before{transform:translateX(-50%) scaleX(-1)}
+.hand.right.repeat-cue .hand-chip:before{transform:translateX(-50%)}
 
 @media(max-width:600px){
   .keyboard{border-radius:8px 8px 13px 13px;gap:.6px}
@@ -51,11 +57,11 @@
   .hand{width:190px;height:118px;bottom:-1px!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:none!important}
   .hand.dim{opacity:0!important;visibility:hidden!important;filter:none!important}
   .hand.press{opacity:1!important;visibility:visible!important;z-index:12!important;filter:drop-shadow(0 10px 11px rgba(68,48,78,.22))!important}
-  #leftHand{left:-17px!important;right:auto!important;transform:scale(.64)!important;transform-origin:bottom center!important}
-  #rightHand{left:auto!important;right:-17px!important;transform:scaleX(-1) scale(.64)!important;transform-origin:bottom center!important}
+  #leftHand{left:-17px!important;right:auto!important;transform:scaleX(-1) scale(.64)!important;transform-origin:bottom center!important}
+  #rightHand{left:auto!important;right:-17px!important;transform:scale(.64)!important;transform-origin:bottom center!important}
   .hand.press.left:after,.hand.press.right:after{position:absolute;top:-34px;white-space:nowrap;padding:5px 10px;border-radius:999px;background:#302a3d;color:#fff;border:2px solid #fff;box-shadow:0 5px 14px rgba(51,38,70,.18);font-size:10px;font-weight:950;letter-spacing:.07em;z-index:20}
-  .hand.press.left:after{content:'LEFT HAND';left:68px}
-  .hand.press.right:after{content:'RIGHT HAND';right:68px;transform:scaleX(-1)}
+  .hand.press.left:after{content:'LEFT HAND';left:68px;transform:scaleX(-1)}
+  .hand.press.right:after{content:'RIGHT HAND';right:68px}
   .hand .palm{width:99px}
   .finger:before{top:-15px;width:15px;height:15px;font-size:8px}
   .hand.press .finger.active:before{top:-21px;width:21px;height:21px;font-size:11px}
@@ -64,8 +70,8 @@
   .hand.repeat-cue .hand-chip:before{top:-25px;font-size:8px;padding:3px 7px}
 }
 @media(max-width:390px){
-  #leftHand{left:-23px!important;transform:scale(.60)!important;transform-origin:bottom center!important}
-  #rightHand{right:-23px!important;transform:scaleX(-1) scale(.60)!important;transform-origin:bottom center!important}
+  #leftHand{left:-23px!important;transform:scaleX(-1) scale(.60)!important;transform-origin:bottom center!important}
+  #rightHand{right:-23px!important;transform:scale(.60)!important;transform-origin:bottom center!important}
   .hand.press.left:after{left:62px}
   .hand.press.right:after{right:62px}
 }
