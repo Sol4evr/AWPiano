@@ -1,1 +1,21 @@
-{"cleanUrls":true,"headers":[{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Cache-Control","value":"no-store"}]}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "python3 scripts/check-deployment-size.py",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": false
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {"key":"X-Content-Type-Options","value":"nosniff"},
+        {"key":"Cache-Control","value":"no-store"}
+      ]
+    }
+  ]
+}
